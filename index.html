@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<link href="jsontree.css" rel="stylesheet">
+		<script src="jsontree.min.js"></script>
+		<script src="ICanHaz.min.js"></script>
+	</head>
+
+	<body>
+		<input id="q" value="http://www.imgur.com"></input>
+		<input id="f" value="//*/img"></input>
+		<input type="button" onClick="getResultsClick()" value="getResults">
+
+		<div id="results">
+		</div>
+
+		<div id="debug">
+		</div>
+
+<script id="data" class="partial" type="text/html">
+	{{ . }}<br>
+</script>
+
+<script id="getResultsHTML" type="text/html">
+	{{# results }}
+		{{> data }}
+	{{/ results }}
+</script>
+
+<script>
+
+function loadPage(page)
+{
+	getResults(hash.query, page)
+}
+
+function loadJSONDataYQL(url, filter, callback)
+{
+	var xmlhttp = new XMLHttpRequest()
+
+	xmlhttp.onreadystatechange = function()
+	{
+		if((xmlhttp.readyState == 4) && (xmlhttp.status == 200))
+		{
+			eval(xmlhttp.responseText)
+		}
+	}
+
+	xmlhttp.open("GET", 'http://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20html%20where%20url%3D\''+encodeURIComponent(url)+'\'%20and%20xpath%3d\''+encodeURIComponent(filter)+'\'&diagnostics=false&format=xml&callback='+callback, true)
+	xmlhttp.send()
+}
+
+function showTree(data)
+{
+	var jsonTree = new JSONTree()
+
+	document.getElementById('debug').innerHTML = jsonTree.create(data)
+}
+
+function showResults(data)
+{
+	document.getElementById('results').innerHTML = ich.getResultsHTML(data)
+
+	showTree(data)
+}
+
+function getResults(url, filter)
+{
+	loadJSONDataYQL(url, filter, 'showResults')
+}
+
+function getResultsClick()
+{
+	var query = document.getElementById('q').value
+	var filter = document.getElementById('f').value
+//	getResults(query, filter)
+	updateRoute({q: query, f: filter})
+}
+
+var hash
+function routeHash()
+{
+	hash = (window['location'].hash).replace(/^#/, '').replace(/%22/g, '"')
+
+	if(hash)
+	{
+		hash = JSON.parse(hash)
+	}
+
+	if(hash.q && !hash.f)
+	{
+		getResults(hash.q, '//*')
+	}
+	else
+	{
+		getResults(hash.q, hash.f)
+	}
+}
+
+function updateRoute(data)
+{
+	window['location'].hash = '#'+JSON.stringify(data)
+}
+
+window.onhashchange = routeHash
+window.onload = routeHash
+	</script>
+
+	</body>
+</html>
